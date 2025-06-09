@@ -6,15 +6,11 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
+  metadataBase: new URL(process.env.NODE_ENV === 'production' ? 'https://tempmail.example.com' : 'http://localhost:3000'),
   title: 'TempMail - Gestion d\'emails temporaires',
   description: 'Application de gestion d\'emails temporaires sécurisée avec interface moderne',
   keywords: 'email temporaire, temp mail, email jetable, sécurité, privacy',
   authors: [{ name: 'TempMail Team' }],
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#171717' }
-  ],
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
@@ -31,6 +27,15 @@ export const metadata = {
     title: 'TempMail - Gestion d\'emails temporaires',
     description: 'Application de gestion d\'emails temporaires sécurisée',
   },
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#171717' }
+  ],
 }
 
 export default function RootLayout({ children }) {
