@@ -17,7 +17,7 @@ export const metadata = {
   ],
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/favicon.png',
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
@@ -37,7 +37,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.png" />
       </head>
       <body className={`${inter.className} min-h-screen bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-100`}>
         <Providers>

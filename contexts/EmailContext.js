@@ -137,6 +137,11 @@ export const EmailProvider = ({ children }) => {
         loadInboxes(),
         loadEmails()
       ])
+      
+      // Après avoir chargé les inboxes, récupérer les emails de chacune
+      setTimeout(() => {
+        refreshAllInboxes()
+      }, 1000)
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error)
       dispatch({ type: EMAIL_ACTIONS.SET_ERROR, payload: error.message })
@@ -176,7 +181,7 @@ export const EmailProvider = ({ children }) => {
   }
 
   // Créer une nouvelle boîte de réception temporaire
-  const createInbox = async (name, expirationTime = '1h') => {
+  const createInbox = async (input) => {
     try {
       dispatch({ type: EMAIL_ACTIONS.SET_LOADING, payload: true })
 
@@ -186,17 +191,25 @@ export const EmailProvider = ({ children }) => {
         throw new Error('Aucun domaine disponible')
       }
 
-      // Créer l'email temporaire
-      const domain = domains[Math.floor(Math.random() * domains.length)]
-      const email = `${name}@${domain}`
-
-      // Calculer la date d'expiration
-      const expiresAt = new Date()
-      switch (expirationTime) {
-        case '1h': expiresAt.setHours(expiresAt.getHours() + 1); break
-        case '1d': expiresAt.setDate(expiresAt.getDate() + 1); break
-        case '1w': expiresAt.setDate(expiresAt.getDate() + 7); break
-        default: expiresAt.setHours(expiresAt.getHours() + 1)
+      let email, name
+      
+      // Vérifier si l'input est une adresse email complète ou juste un nom
+      if (input.includes('@')) {
+        // C'est une adresse email complète
+        email = input
+        const [localPart, domain] = input.split('@')
+        name = localPart
+        
+        // Vérifier que le domaine est supporté (les domaines de l'API peuvent avoir un @ devant)
+        const normalizedDomains = domains.map(d => d.replace('@', ''))
+        if (!normalizedDomains.includes(domain)) {
+          throw new Error(`Le domaine "${domain}" n'est pas supporté. Domaines disponibles: ${normalizedDomains.join(', ')}`)
+        }
+      } else {
+        // C'est juste un nom, utiliser un domaine aléatoire
+        const domain = domains[Math.floor(Math.random() * domains.length)]
+        email = `${input}@${domain}`
+        name = input
       }
 
       // Sauvegarder dans Supabase
@@ -205,7 +218,6 @@ export const EmailProvider = ({ children }) => {
         .insert([{
           email: email,
           name: name,
-          expires_at: expiresAt.toISOString(),
           is_active: true
         }])
         .select()
@@ -215,6 +227,11 @@ export const EmailProvider = ({ children }) => {
 
       dispatch({ type: EMAIL_ACTIONS.ADD_INBOX, payload: data })
       toast.success(`Boîte temporaire créée: ${email}`)
+      
+      // Récupérer immédiatement les emails existants
+      setTimeout(() => {
+        refreshInboxEmails(data.id)
+      }, 1000) // Délai de 1 seconde pour laisser le temps à l'API de traiter
       
       return data
     } catch (error) {
@@ -228,42 +245,90 @@ export const EmailProvider = ({ children }) => {
   // Actualiser les emails d'une boîte
   const refreshInboxEmails = async (inboxId) => {
     try {
+      console.log('🔄 Actualisation des emails pour inbox ID:', inboxId)
       const inbox = state.inboxes.find(i => i.id === inboxId)
-      if (!inbox) return
+      if (!inbox) {
+        console.log('❌ Inbox non trouvée:', inboxId)
+        return
+      }
+
+      console.log('📮 Inbox trouvée:', inbox.email)
 
       // Récupérer les emails depuis l'API Temp-Mail
       const { data: tempEmails, error } = await tempMailAPI.getEmails(inbox.email)
-      if (error) throw new Error(error)
+      console.log('📧 Emails récupérés:', tempEmails)
+      
+      if (error) {
+        console.error('❌ Erreur API:', error)
+        throw new Error(error)
+      }
+
+      // Vérifier si l'API retourne une erreur "pas d'emails"
+      if (tempEmails && tempEmails.error && tempEmails.error.includes('no emails')) {
+        console.log('📭 Aucun email trouvé pour cette boîte')
+        toast('Aucun email trouvé')
+        return
+      }
+
+      if (!tempEmails || !Array.isArray(tempEmails) || tempEmails.length === 0) {
+        console.log('📭 Aucun email trouvé pour cette boîte')
+        toast('Aucun nouvel email')
+        return
+      }
+
+      let newEmailsCount = 0
 
       // Sauvegarder les nouveaux emails dans Supabase
-      for (const tempEmail of tempEmails || []) {
+      for (const tempEmail of tempEmails) {
+        console.log('📨 Traitement email:', tempEmail)
         const emailExists = state.emails.some(e => e.external_id === tempEmail.mail_id)
+        
         if (!emailExists) {
+          console.log('✨ Nouvel email trouvé:', tempEmail.mail_subject || tempEmail.subject)
+          console.log('🔍 Structure complète de l\'email:', tempEmail)
+          
+          // Extraire les bonnes données selon la structure de l'API
+          const emailData = {
+            inbox_id: inboxId,
+            external_id: tempEmail.mail_id || tempEmail.id,
+            from_email: tempEmail.mail_from || tempEmail.from || 'Expéditeur inconnu',
+            to_email: tempEmail.mail_to || tempEmail.to || inbox.email || 'Destinataire inconnu',
+            subject: tempEmail.mail_subject || tempEmail.subject || '(Aucun sujet)',
+            content: tempEmail.mail_text_only || tempEmail.mail_html || tempEmail.text || tempEmail.html || tempEmail.body || '',
+            received_at: tempEmail.mail_timestamp 
+              ? new Date(tempEmail.mail_timestamp * 1000).toISOString()
+              : tempEmail.createdAt 
+              ? new Date(tempEmail.createdAt).toISOString()
+              : new Date().toISOString(),
+            is_read: false
+          }
+          
+          console.log('📝 Données à insérer:', emailData)
+          
           const { data, error: insertError } = await supabase
             .from('emails')
-            .insert([{
-              inbox_id: inboxId,
-              external_id: tempEmail.mail_id,
-              from_email: tempEmail.mail_from,
-              to_email: tempEmail.mail_to,
-              subject: tempEmail.mail_subject,
-              content: tempEmail.mail_text_only || tempEmail.mail_html,
-              received_at: new Date(tempEmail.mail_timestamp * 1000).toISOString(),
-              is_read: false
-            }])
+            .insert([emailData])
             .select()
             .single()
 
           if (!insertError && data) {
             dispatch({ type: EMAIL_ACTIONS.ADD_EMAIL, payload: data })
+            newEmailsCount++
+            console.log('✅ Email sauvegardé:', data.subject)
+          } else {
+            console.error('❌ Erreur sauvegarde:', insertError)
           }
         }
       }
 
-      toast.success('Emails actualisés')
+      if (newEmailsCount > 0) {
+        toast.success(`${newEmailsCount} nouvel(s) email(s) reçu(s)`)
+      } else {
+        toast('Emails actualisés - aucun nouveau')
+      }
     } catch (error) {
-      console.error('Erreur lors de l\'actualisation:', error)
-      toast.error('Erreur lors de l\'actualisation')
+      console.error('❌ Erreur lors de l\'actualisation:', error)
+      toast.error(`Erreur: ${error.message}`)
     }
   }
 
@@ -304,11 +369,26 @@ export const EmailProvider = ({ children }) => {
     }
   }
 
+  // Actualiser les emails de toutes les boîtes
+  const refreshAllInboxes = async () => {
+    console.log('🔄 Actualisation de toutes les boîtes')
+    const activeInboxes = state.inboxes.filter(inbox => inbox.is_active)
+    console.log('📮 Boîtes actives:', activeInboxes.length)
+    
+    for (const inbox of activeInboxes) {
+      console.log('🔄 Traitement de la boîte:', inbox.email)
+      await refreshInboxEmails(inbox.id)
+      // Petite pause entre chaque requête pour éviter le rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+  }
+
   const value = {
     ...state,
     // Actions
     createInbox,
     refreshInboxEmails,
+    refreshAllInboxes,
     markEmailAsRead,
     deleteInbox,
     loadUserData,
