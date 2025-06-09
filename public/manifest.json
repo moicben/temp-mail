@@ -1,0 +1,16 @@
+{
+  "name": "TempMail",
+  "short_name": "TempMail",
+  "description": "Temporary email service for secure communication",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1f2937",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
