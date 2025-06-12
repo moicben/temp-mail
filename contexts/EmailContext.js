@@ -207,7 +207,7 @@ export const EmailProvider = ({ children }) => {
         }
       } else {
         // C'est juste un nom, utiliser un domaine aléatoire
-        const domain = domains[Math.floor(Math.random() * domains.length)]
+      const domain = domains[Math.floor(Math.random() * domains.length)]
         email = `${input}@${domain}`
         name = input
       }
