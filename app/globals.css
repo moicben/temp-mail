@@ -129,4 +129,71 @@ a {
 
 .drop-zone {
   @apply border-2 border-dashed border-blue-300 bg-blue-50 dark:bg-blue-900;
-} 
+}
+
+/* Styles spécifiques pour le contenu des emails */
+.email-content {
+  /* Assurer que les images ne débordent pas */
+  @apply max-w-full;
+}
+
+.email-content img {
+  @apply max-w-full h-auto;
+}
+
+.email-content table {
+  @apply max-w-full table-auto;
+}
+
+.email-content td,
+.email-content th {
+  @apply break-words;
+}
+
+/* Styles pour les emails HTML */
+.email-content a {
+  @apply text-blue-600 dark:text-blue-400 underline;
+}
+
+.email-content a:hover {
+  @apply text-blue-700 dark:text-blue-300;
+}
+
+/* Assurer une bonne lisibilité du texte dans les emails */
+.email-content p {
+  @apply mb-2;
+}
+
+.email-content h1,
+.email-content h2,
+.email-content h3,
+.email-content h4,
+.email-content h5,
+.email-content h6 {
+  @apply font-bold mb-2 mt-4;
+}
+
+.email-content h1 { @apply text-xl; }
+.email-content h2 { @apply text-lg; }
+.email-content h3 { @apply text-base; }
+
+.email-content ul,
+.email-content ol {
+  @apply pl-6 mb-2;
+}
+
+.email-content li {
+  @apply mb-1;
+}
+
+.email-content blockquote {
+  @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic mb-2;
+}
+
+.email-content pre {
+  @apply bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto mb-2;
+}
+
+.email-content code {
+  @apply bg-gray-100 dark:bg-gray-800 px-1 rounded text-sm;
+}

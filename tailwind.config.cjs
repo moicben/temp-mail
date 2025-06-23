@@ -54,7 +54,46 @@ module.exports = {
           '100%': { transform: 'translateX(0)' },
         },
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: 'none',
+            color: 'inherit',
+            a: {
+              color: '#3b82f6',
+              textDecoration: 'underline',
+              '&:hover': {
+                color: '#2563eb',
+              },
+            },
+            h1: {
+              color: 'inherit',
+            },
+            h2: {
+              color: 'inherit',
+            },
+            h3: {
+              color: 'inherit',
+            },
+            h4: {
+              color: 'inherit',
+            },
+            strong: {
+              color: 'inherit',
+            },
+            code: {
+              color: 'inherit',
+            },
+            blockquote: {
+              color: 'inherit',
+              borderLeftColor: '#d1d5db',
+            },
+          },
+        },
+      },
     },
   },
-  plugins: [],
-} 
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
+}
