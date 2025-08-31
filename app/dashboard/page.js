@@ -11,7 +11,7 @@ import {
   HiPlus, 
   HiRefresh, 
   HiTrash, 
-  HiMail,
+  HiMail, 
   HiInbox,
   HiSun,
   HiMoon,
